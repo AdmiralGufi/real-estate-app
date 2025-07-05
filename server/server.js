@@ -3,7 +3,7 @@ import cors from 'cors';
 import fs from 'fs/promises';
 
 const app = express();
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
@@ -20,6 +20,20 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+
+// Root route for health check
+app.get('/', (req, res) => {
+    res.json({ 
+        message: 'Real Estate API is running!', 
+        endpoints: [
+            'GET /api/properties',
+            'GET /api/properties/:id',
+            'POST /api/properties',
+            'PUT /api/properties/:id',
+            'DELETE /api/properties/:id'
+        ]
+    });
+});
 
 // Helper function to read data
 const readData = async () => {
@@ -140,6 +154,6 @@ app.post('/api/login', (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-    console.log(`Сервер запущен на http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
 });
