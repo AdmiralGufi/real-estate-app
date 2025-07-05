@@ -29,6 +29,7 @@ const HomePage = ({
   handleDeleteProperty, 
   handleFilterChange,
   handleCurrencyChange,
+  handleSortChange,
   currencyPreference,
   isLoading,
   error,

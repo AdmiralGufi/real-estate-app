@@ -3,60 +3,83 @@ import React, { useEffect, useRef, useState } from 'react';
 const YandexMap = ({ properties }) => {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [map, setMap] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
+  const [clusterer, setClusterer] = useState(null);
   const [error, setError] = useState(null);
   
-  // Загружаем Яндекс Карты
-  useEffect(() => {
-    if (!window.ymaps) {
-      const script = document.createElement('script');
-      // Используем API ключ из переменных окружения или альтернативный ключ
-      const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY;
-      
-      if (!apiKey) {
-        setError("API ключ Яндекс.Карт не найден");
+  // Функция загрузки API Яндекс.Карт
+  const loadYMapsApi = () => {
+    return new Promise((resolve, reject) => {
+      if (window.ymaps) {
+        console.log('YMaps API already loaded');
+        resolve(window.ymaps);
         return;
       }
       
-      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
+      const script = document.createElement('script');
+      script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
       script.async = true;
       
       script.onload = () => {
-        window.ymaps.ready(() => {
-          setMapLoaded(true);
-        });
+        if (window.ymaps) {
+          window.ymaps.ready(() => {
+            console.log('YMaps API loaded successfully');
+            resolve(window.ymaps);
+          });
+        } else {
+          reject(new Error('YMaps API failed to load correctly'));
+        }
       };
       
-      script.onerror = () => {
-        setError("Не удалось загрузить API Яндекс.Карт");
+      script.onerror = (error) => {
+        console.error('Failed to load YMaps API', error);
+        reject(new Error('Failed to load YMaps API'));
       };
       
       document.head.appendChild(script);
-      
-      return () => {
-        document.head.removeChild(script);
-      };
-    } else if (window.ymaps) {
-      window.ymaps.ready(() => {
-        setMapLoaded(true);
+    });
+  };
+  
+  // Загружаем API Яндекс.Карт
+  useEffect(() => {
+    let isMounted = true;
+    
+    loadYMapsApi()
+      .then((ymaps) => {
+        if (isMounted) {
+          console.log('YMaps API ready for use');
+          setMapLoaded(true);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          console.error('Error loading YMaps API:', error);
+          setError('Не удалось загрузить API Яндекс.Карт');
+        }
       });
-    }
+      
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Инициализируем карту после загрузки API
+  // Инициализируем карту
   useEffect(() => {
-    if (mapLoaded && mapRef.current) {
+    if (!mapLoaded || !window.ymaps || !mapRef.current) return;
+
+    try {
+      console.log('Initializing Yandex Map...');
       // Координаты центра Бишкека
       const bishkekCenter = [42.8746, 74.5698];
       
-      const yandexMap = new window.ymaps.Map(mapRef.current, {
+      const map = new window.ymaps.Map(mapRef.current, {
         center: bishkekCenter,
         zoom: 12,
         controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
       });
       
-      // Создаем кластер для группировки близко расположенных меток
-      const clusterer = new window.ymaps.Clusterer({
+      // Создаем кластер для группировки меток
+      const clustererInstance = new window.ymaps.Clusterer({
         preset: 'islands#invertedBlueClusterIcons',
         groupByCoordinates: false,
         clusterDisableClickZoom: false,
@@ -64,125 +87,99 @@ const YandexMap = ({ properties }) => {
         geoObjectHideIconOnBalloonOpen: false
       });
       
-      setMap({ map: yandexMap, clusterer });
+      map.geoObjects.add(clustererInstance);
       
-      // Аналитика удалена
+      setMapInstance(map);
+      setClusterer(clustererInstance);
       
-      // Добавляем обработчик для отслеживания перемещения карты
-      yandexMap.events.add('boundschange', () => {
-        // Аналитика удалена
-      });
+      console.log('Yandex Map initialized successfully');
+    } catch (err) {
+      console.error('Error initializing Yandex Map:', err);
+      setError(`Ошибка инициализации карты: ${err.message}`);
     }
   }, [mapLoaded]);
 
-  // Добавляем метки на карту
+  // Добавляем метки объектов на карту
   useEffect(() => {
-    if (map && properties && properties.length > 0) {
-      // Удаляем предыдущие метки
-      if (map.clusterer) {
-        map.clusterer.removeAll();
-      }
+    if (!mapInstance || !clusterer || !properties || properties.length === 0) return;
+    
+    try {
+      console.log('Adding markers to map...');
+      // Очищаем предыдущие метки
+      clusterer.removeAll();
       
-      const newPlacemarks = [];
+      const placemarks = [];
       const bounds = new window.ymaps.GeoObjectCollection();
       
       properties.forEach(property => {
-        // Проверяем наличие координат
-        if (property.coordinates && property.coordinates.lat && property.coordinates.lng) {
-          const coordinates = [property.coordinates.lat, property.coordinates.lng];
-          
-          // Создаем балун (всплывающее окно) с информацией о недвижимости
+        if (property.coordinates && property.coordinates.length === 2) {
+          // Создаем балун (всплывающее окно) с информацией
           const balloonContent = `
-            <div class="property-balloon" style="max-width: 250px;">
-              <h3 style="font-weight: bold; margin-bottom: 5px; color: #4f46e5;">${property.title}</h3>
-              <div style="margin-bottom: 8px;">
-                <img src="${property.imageUrl}" alt="${property.title}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px;">
-              </div>
-              <p style="margin: 5px 0;"><b>Адрес:</b> ${property.location.address}</p>
-              <p style="margin: 5px 0;"><b>Район:</b> ${property.location.district}</p>
-              <p style="margin: 5px 0;"><b>Площадь:</b> ${property.area} м²</p>
-              <p style="font-weight: bold; color: #4f46e5; font-size: 16px; margin-top: 8px;">${property.price.toLocaleString('ru-RU')} сом</p>
-              <button onclick="window.selectProperty(${property.id})" style="background-color: #4f46e5; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin-top: 8px; cursor: pointer; width: 100%;">Подробнее</button>
+            <div class="map-balloon">
+              <h3>${property.title}</h3>
+              <p>${property.address}</p>
+              <p><strong>Цена:</strong> ${property.price.toLocaleString()} сом</p>
+              <p><strong>Тип:</strong> ${property.type}</p>
+              <button onclick="window.selectProperty('${property.id}')">Подробнее</button>
             </div>
           `;
           
-          // Создаем метку
+          // Выбираем цвет маркера в зависимости от типа объекта
           const placemark = new window.ymaps.Placemark(
-            coordinates, 
+            property.coordinates,
             {
-              balloonContent,
-              hintContent: `${property.title} - ${property.price.toLocaleString('ru-RU')} сом`
-            }, 
+              balloonContent: balloonContent,
+              hintContent: property.title
+            },
             {
-              preset: 'islands#blueDotIcon',
-              iconColor: property.type === 'Квартира' ? '#4f46e5' : 
+              preset: 'islands#circleIcon',
+              iconColor: property.type === 'Квартира' ? '#3b82f6' : 
                          property.type === 'Дом' ? '#10b981' : 
                          property.type === 'Коммерция' ? '#f59e0b' : '#4f46e5'
             }
           );
           
-          // Добавляем обработчик клика
-          placemark.events.add('click', () => {
-            // Аналитика удалена
-          });
-          
-          newPlacemarks.push(placemark);
+          placemarks.push(placemark);
           bounds.add(placemark);
         }
       });
       
-      // Добавляем метки на карту через кластеризатор
-      if (newPlacemarks.length > 0) {
-        map.clusterer.add(newPlacemarks);
-        map.map.geoObjects.add(map.clusterer);
-        
-        // Устанавливаем границы карты, чтобы были видны все метки
-        if (newPlacemarks.length > 1) {
-          map.map.setBounds(bounds.getBounds(), {
-            checkZoomRange: true,
-            zoomMargin: 30
-          });
-        } else if (newPlacemarks.length === 1) {
-          map.map.setCenter(newPlacemarks[0].geometry.getCoordinates());
-          map.map.setZoom(15);
-        }
+      // Добавляем все метки на карту
+      clusterer.add(placemarks);
+      
+      // Устанавливаем границы карты, чтобы видеть все объекты
+      if (placemarks.length > 0) {
+        mapInstance.setBounds(bounds.getBounds(), {
+          checkZoomRange: true,
+          zoomMargin: 100
+        }).then(() => {
+          if (mapInstance.getZoom() > 16) mapInstance.setZoom(16);
+        });
       }
       
-      // Добавляем глобальную функцию для выбора объекта из балуна
+      // Создаем глобальную функцию для выбора объекта из балуна
       window.selectProperty = (id) => {
-        const selectedProperty = properties.find(p => p.id === id);
+        const selectedProperty = properties.find(p => p.id.toString() === id.toString());
         if (selectedProperty) {
-          // Вызываем событие выбора объекта
+          // Создаем и вызываем пользовательское событие
           const event = new CustomEvent('property-selected', { detail: selectedProperty });
           document.dispatchEvent(event);
-          
-          // Аналитика удалена
         }
       };
+      
+      console.log('Added', placemarks.length, 'property markers to map');
+    } catch (err) {
+      console.error('Error adding markers to map:', err);
     }
     
-    // Очистка при размонтировании
     return () => {
+      // Очистка при размонтировании
       if (window.selectProperty) {
         delete window.selectProperty;
       }
     };
-  }, [map, properties]);
+  }, [mapInstance, clusterer, properties]);
 
-  // Обработчик для слушания события выбора объекта из карты
-  useEffect(() => {
-    const handlePropertySelected = (event) => {
-      // Здесь можно добавить действия при выборе объекта с карты
-      console.log('Property selected from map:', event.detail);
-    };
-    
-    document.addEventListener('property-selected', handlePropertySelected);
-    
-    return () => {
-      document.removeEventListener('property-selected', handlePropertySelected);
-    };
-  }, []);
-  
   // Компонент возвращает карту или сообщение об ошибке
   return (
     <div className="rounded-xl shadow-lg overflow-hidden">
@@ -191,17 +188,16 @@ const YandexMap = ({ properties }) => {
       {error ? (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
           <p>{error}</p>
-          <p className="text-sm mt-2">Пожалуйста, проверьте API ключ Яндекс.Карт и добавьте домен в белый список в кабинете разработчика Яндекс.</p>
+          <p className="text-sm mt-2">Проверьте подключение к интернету или попробуйте позже.</p>
         </div>
       ) : (
         <div 
           ref={mapRef} 
-          className="w-full h-[400px] bg-gray-100 rounded-lg"
-          style={{ minHeight: '400px' }}
+          className="w-full h-[500px] rounded-lg overflow-hidden"
         >
           {!mapLoaded && (
-            <div className="flex items-center justify-center h-full">
-              <p>Загрузка карты...</p>
+            <div className="w-full h-full flex justify-center items-center bg-gray-100">
+              <p className="text-gray-500">Загрузка карты...</p>
             </div>
           )}
         </div>
