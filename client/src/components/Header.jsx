@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Menu, X, Plus, Phone, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { logConversion, logEvent } from '../services/analytics';
 
 const Header = ({ onNavigate, onAdminLogin, currencyPreference = 'som', onCurrencyChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,13 +11,13 @@ const Header = ({ onNavigate, onAdminLogin, currencyPreference = 'som', onCurren
     const newCurrency = currencyPreference === 'som' ? 'usd' : 'som';
     if (onCurrencyChange) {
       onCurrencyChange(newCurrency);
-      logEvent('UI', 'GlobalCurrencyToggle', newCurrency);
+      // Аналитика удалена
     }
   };
   
   const handlePhoneClick = () => {
-    // Отслеживаем клик по телефону как конверсию
-    logConversion('PhoneClick', { label: 'Header Phone' });
+    // Ранее здесь был код отслеживания конверсии
+    // Аналитика удалена
   };
 
   return (

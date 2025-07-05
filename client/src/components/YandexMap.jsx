@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { logEvent } from '../services/analytics';
 
 const YandexMap = ({ properties }) => {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [map, setMap] = useState(null);
-  const [placemarks, setPlacemarks] = useState([]);
+  const [error, setError] = useState(null);
   
   // Загружаем Яндекс Карты
   useEffect(() => {
     if (!window.ymaps) {
       const script = document.createElement('script');
-      const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY || '8c1cefda-a209-4939-94e5-00994f4bc0f7';
+      // Используем API ключ из переменных окружения или альтернативный ключ
+      const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY;
+      
+      if (!apiKey) {
+        setError("API ключ Яндекс.Карт не найден");
+        return;
+      }
+      
       script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`;
       script.async = true;
       
@@ -19,6 +25,10 @@ const YandexMap = ({ properties }) => {
         window.ymaps.ready(() => {
           setMapLoaded(true);
         });
+      };
+      
+      script.onerror = () => {
+        setError("Не удалось загрузить API Яндекс.Карт");
       };
       
       document.head.appendChild(script);
@@ -56,12 +66,11 @@ const YandexMap = ({ properties }) => {
       
       setMap({ map: yandexMap, clusterer });
       
-      // Логируем событие инициализации карты
-      logEvent('Map', 'Initialize', 'YandexMaps');
+      // Аналитика удалена
       
       // Добавляем обработчик для отслеживания перемещения карты
       yandexMap.events.add('boundschange', () => {
-        logEvent('Map', 'BoundsChange', 'YandexMaps');
+        // Аналитика удалена
       });
     }
   }, [mapLoaded]);
@@ -112,9 +121,9 @@ const YandexMap = ({ properties }) => {
             }
           );
           
-          // Добавляем обработчик клика для отслеживания
+          // Добавляем обработчик клика
           placemark.events.add('click', () => {
-            logEvent('Map', 'PlacemarkClick', `Property ID: ${property.id}`, property.price);
+            // Аналитика удалена
           });
           
           newPlacemarks.push(placemark);
@@ -139,8 +148,6 @@ const YandexMap = ({ properties }) => {
         }
       }
       
-      setPlacemarks(newPlacemarks);
-      
       // Добавляем глобальную функцию для выбора объекта из балуна
       window.selectProperty = (id) => {
         const selectedProperty = properties.find(p => p.id === id);
@@ -149,8 +156,7 @@ const YandexMap = ({ properties }) => {
           const event = new CustomEvent('property-selected', { detail: selectedProperty });
           document.dispatchEvent(event);
           
-          // Логируем событие
-          logEvent('Map', 'PropertySelectedFromBalloon', `Property ID: ${id}`, selectedProperty.price);
+          // Аналитика удалена
         }
       };
     }
@@ -177,22 +183,29 @@ const YandexMap = ({ properties }) => {
     };
   }, []);
   
+  // Компонент возвращает карту или сообщение об ошибке
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden p-5">
-      <h2 className="text-2xl font-bold mb-4">Карта объектов в Бишкеке</h2>
-      <div 
-        ref={mapRef} 
-        className="w-full h-[500px] rounded-lg"
-        style={{ border: '1px solid #e2e8f0' }}
-      />
-      {!mapLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
-          <div className="text-lg font-medium">Загрузка карты...</div>
+    <div className="rounded-xl shadow-lg overflow-hidden">
+      <h2 className="text-2xl font-bold text-secondary mb-4">Объекты на карте</h2>
+      
+      {error ? (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+          <p>{error}</p>
+          <p className="text-sm mt-2">Пожалуйста, проверьте API ключ Яндекс.Карт и добавьте домен в белый список в кабинете разработчика Яндекс.</p>
+        </div>
+      ) : (
+        <div 
+          ref={mapRef} 
+          className="w-full h-[400px] bg-gray-100 rounded-lg"
+          style={{ minHeight: '400px' }}
+        >
+          {!mapLoaded && (
+            <div className="flex items-center justify-center h-full">
+              <p>Загрузка карты...</p>
+            </div>
+          )}
         </div>
       )}
-      <div className="mt-4 text-sm text-gray-500">
-        Нажмите на маркер, чтобы увидеть детали объекта. Используйте колесо мыши для масштабирования.
-      </div>
     </div>
   );
 };

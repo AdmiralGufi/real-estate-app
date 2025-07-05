@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { getProperties } from './services/api';
-import { logPageView, logEvent, logConversion } from './services/analytics';
 import { updateExchangeRate, somToUsd, usdToSom } from './services/currencyConverter';
 
 import Header from './components/Header';
@@ -107,9 +106,9 @@ export default function App() {
   
   const location = useLocation();
   
-  // Отслеживание изменения страницы
+  // Раньше здесь был код для отслеживания изменения страницы через аналитику
   useEffect(() => {
-    logPageView(location.pathname + location.search);
+    // Аналитика удалена
   }, [location]);
   
   // Обновление курса валют при загрузке приложения
@@ -122,7 +121,7 @@ export default function App() {
   // Функция для переключения валюты
   const handleCurrencyChange = (newCurrency) => {
     setCurrencyPreference(newCurrency);
-    logEvent('UI', 'CurrencyPreferenceChange', newCurrency);
+    // Аналитика удалена
   };
   
   const handleSortChange = (sortValue) => {
@@ -147,7 +146,7 @@ export default function App() {
     });
     
     setFilteredProperties(sorted);
-    logEvent('UI', 'SortOrderChange', sortValue);
+    // Аналитика удалена
   };
   
   // This now only loads data from API once at the beginning
@@ -191,9 +190,9 @@ export default function App() {
     fetchProperties();
   }, [fetchProperties]);
 
-  // Log page views
+  // Раньше здесь был код для логирования просмотра страниц
   useEffect(() => {
-    logPageView(location.pathname);
+    // Аналитика удалена
   }, [location.pathname]);
 
   // New function to handle filter changes
@@ -270,7 +269,7 @@ export default function App() {
     const handlePropertySelectedFromMap = (event) => {
       const property = event.detail;
       if (property) {
-        logEvent('Map', 'ViewPropertyDetails', `ID: ${property.id}`, property.price);
+        // Аналитика удалена
         setSelectedProperty(property);
       }
     };
@@ -285,7 +284,7 @@ export default function App() {
   // Отслеживание выбора объекта недвижимости
   const trackPropertySelection = (property) => {
     if (property) {
-      logEvent('Property', 'View', `ID: ${property.id}`, property.price);
+      // Аналитика удалена
     }
     setSelectedProperty(property);
   };

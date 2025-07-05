@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { logConversion } from '../services/analytics';
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({
@@ -19,11 +18,7 @@ const ContactSection = () => {
     // Здесь будет логика отправки формы на сервер
     console.log('Form submitted:', formData);
     
-    // Отслеживание конверсии
-    logConversion('FormSubmit', { 
-      label: 'Contact Form', 
-      value: 1 
-    });
+    // Аналитика удалена
     
     // Сброс формы
     setFormData({ name: '', email: '', message: '' });

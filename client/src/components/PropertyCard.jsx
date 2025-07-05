@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, BedDouble, Bath, DollarSign } from 'lucide-react';
-import { logEvent } from '../services/analytics';
 import { somToUsd, formatUsd, formatSom } from '../services/currencyConverter';
 
 const PropertyCard = ({ property, onCardClick }) => {
   const [showUsd, setShowUsd] = useState(false);
   
   const handleCardClick = () => {
-    // Отслеживаем клик по объекту
-    logEvent('Property', 'CardClick', `ID: ${property.id}`, property.price);
+    // Ранее здесь был код отслеживания аналитики
     // Вызываем основную функцию
     onCardClick(property);
   };
@@ -17,7 +15,7 @@ const PropertyCard = ({ property, onCardClick }) => {
   const toggleCurrency = (e) => {
     e.stopPropagation(); // Предотвращаем всплытие события на родительский div
     setShowUsd(!showUsd);
-    logEvent('UI', 'CurrencyToggle', `Property ID: ${property.id}`, showUsd ? 0 : 1);
+    // Аналитика удалена
   };
 
   return (
