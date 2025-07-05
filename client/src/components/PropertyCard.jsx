@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, BedDouble, Bath } from 'lucide-react';
+import { MapPin, BedDouble, Bath, DollarSign } from 'lucide-react';
 import { logEvent } from '../services/analytics';
+import { somToUsd, formatUsd, formatSom } from '../services/currencyConverter';
 
 const PropertyCard = ({ property, onCardClick }) => {
+  const [showUsd, setShowUsd] = useState(false);
+  
   const handleCardClick = () => {
     // Отслеживаем клик по объекту
     logEvent('Property', 'CardClick', `ID: ${property.id}`, property.price);
     // Вызываем основную функцию
     onCardClick(property);
+  };
+  
+  const toggleCurrency = (e) => {
+    e.stopPropagation(); // Предотвращаем всплытие события на родительский div
+    setShowUsd(!showUsd);
+    logEvent('UI', 'CurrencyToggle', `Property ID: ${property.id}`, showUsd ? 0 : 1);
   };
 
   return (
@@ -26,7 +35,21 @@ const PropertyCard = ({ property, onCardClick }) => {
           <div className="absolute top-2 left-2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">{property.type}</div>
       </div>
       <div className="p-5">
-        <p className="text-2xl font-bold text-primary">{property.price.toLocaleString('ru-RU')} ₽</p>
+        <div className="flex justify-between items-center">
+          <p className="text-2xl font-bold text-primary">
+            {showUsd 
+              ? formatUsd(somToUsd(property.price)) 
+              : `${property.price.toLocaleString('ru-RU')} сом`
+            }
+          </p>
+          <button 
+            onClick={toggleCurrency}
+            className="flex items-center justify-center rounded-full w-8 h-8 bg-gray-100 hover:bg-gray-200 transition-colors"
+            title={showUsd ? "Показать в сомах" : "Показать в долларах"}
+          >
+            <DollarSign size={16} className={`${showUsd ? "text-green-600" : "text-gray-600"}`} />
+          </button>
+        </div>
         <h3 className="text-xl font-semibold text-secondary mt-1 truncate">{property.title}</h3>
         <p className="text-gray-500 flex items-center mt-2">
           <MapPin size={16} className="mr-1.5 flex-shrink-0"/> {property.location.district}

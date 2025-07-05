@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { getProperties } from './services/api';
 import { logPageView, logEvent, logConversion } from './services/analytics';
+import { updateExchangeRate } from './services/currencyConverter';
 
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
@@ -13,6 +14,7 @@ import Footer from './components/Footer';
 import PropertyModal from './components/PropertyModal';
 import AdminPanel from './components/AdminPanel';
 import AddProperty from './components/AddProperty';
+import PropertyMap from './components/PropertyMap';
 
 const HomePage = ({ 
   properties, 
@@ -26,13 +28,22 @@ const HomePage = ({
   handleAddProperty, 
   handleEditProperty, 
   handleDeleteProperty, 
-  handleFilterChange, 
+  handleFilterChange,
+  handleCurrencyChange,
+  currencyPreference,
   isLoading,
   error,
   allDistricts
 }) => (
   <div className="min-h-screen bg-gray-50">
-    <Header onNavigate={handleNavigate} isAdmin={isAdmin} onAdminLogin={handleAdminLogin} onAdminLogout={handleAdminLogout} />
+    <Header 
+      onNavigate={handleNavigate} 
+      isAdmin={isAdmin} 
+      onAdminLogin={handleAdminLogin} 
+      onAdminLogout={handleAdminLogout}
+      currencyPreference={currencyPreference}
+      onCurrencyChange={handleCurrencyChange}
+    />
     <main>
       <HeroSection onNavigate={handleNavigate} />
       {isLoading ? (
@@ -47,6 +58,9 @@ const HomePage = ({
           allDistricts={allDistricts || []}
         />
       )}
+      <div className="container mx-auto px-4 py-8">
+        <PropertyMap properties={filteredProperties || []} />
+      </div>
       <AboutSection />
       <ContactSection />
     </main>
@@ -80,6 +94,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [allDistricts, setAllDistricts] = useState([]);
+  const [currencyPreference, setCurrencyPreference] = useState('som'); // 'som' или 'usd'
   const [filters, setFilters] = useState({
     type: 'all',
     district: 'all',
@@ -93,6 +108,19 @@ export default function App() {
   useEffect(() => {
     logPageView(location.pathname + location.search);
   }, [location]);
+  
+  // Обновление курса валют при загрузке приложения
+  useEffect(() => {
+    updateExchangeRate()
+      .then(rate => console.log('Exchange rate loaded:', rate))
+      .catch(err => console.error('Failed to update exchange rate:', err));
+  }, []);
+  
+  // Функция для переключения валюты
+  const handleCurrencyChange = (currency) => {
+    setCurrencyPreference(currency);
+    logEvent('UI', 'DefaultCurrencyChange', currency);
+  };
   
   // Отслеживание взаимодействий с объектами
   const trackPropertySelection = (property) => {
@@ -233,6 +261,8 @@ export default function App() {
         handleEditProperty={handleEditProperty}
         handleDeleteProperty={handleDeleteProperty}
         handleFilterChange={handleFilterChange}
+        handleCurrencyChange={handleCurrencyChange}
+        currencyPreference={currencyPreference}
         isLoading={isLoading}
         error={error}
         allDistricts={allDistricts}

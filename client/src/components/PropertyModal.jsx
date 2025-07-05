@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, BedDouble, Bath, X, Home } from 'lucide-react';
+import { MapPin, BedDouble, Bath, X, Home, DollarSign } from 'lucide-react';
+import { somToUsd, formatUsd, formatSom } from '../services/currencyConverter';
 
-const PropertyModal = ({ property, onClose }) => (
+const PropertyModal = ({ property, onClose }) => {
+  const [showUsd, setShowUsd] = useState(false);
+  
+  const toggleCurrency = () => {
+    setShowUsd(!showUsd);
+  };
+  
+  return (
     <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -31,8 +39,18 @@ const PropertyModal = ({ property, onClose }) => (
                             <MapPin size={20} className="mr-2"/> {property.location.address}, {property.location.district}
                         </p>
                     </div>
-                    <div className="text-3xl md:text-4xl font-bold text-primary mt-4 md:mt-0 flex-shrink-0">
-                        {property.price.toLocaleString('ru-RU')} ₽
+                    <div className="text-3xl md:text-4xl font-bold text-primary mt-4 md:mt-0 flex-shrink-0 flex items-center gap-2">
+                        {showUsd 
+                          ? formatUsd(somToUsd(property.price))
+                          : `${property.price.toLocaleString('ru-RU')} сом`
+                        }
+                        <button 
+                          onClick={toggleCurrency}
+                          className="flex items-center justify-center rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 transition-colors ml-2"
+                          title={showUsd ? "Показать в сомах" : "Показать в долларах"}
+                        >
+                          <DollarSign size={20} className={`${showUsd ? "text-green-600" : "text-gray-600"}`} />
+                        </button>
                     </div>
                 </div>
                 
@@ -74,6 +92,7 @@ const PropertyModal = ({ property, onClose }) => (
             </div>
         </motion.div>
     </motion.div>
-);
+  );
+};
 
 export default PropertyModal;

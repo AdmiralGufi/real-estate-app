@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Menu, X, Plus, Phone } from 'lucide-react';
+import { Home, Menu, X, Plus, Phone, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { logConversion } from '../services/analytics';
+import { logConversion, logEvent } from '../services/analytics';
 
-const Header = ({ onNavigate, onAdminLogin }) => {
+const Header = ({ onNavigate, onAdminLogin, currencyPreference = 'som', onCurrencyChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const links = ["Объекты", "О нас", "Контакты"];
+  
+  const toggleCurrency = () => {
+    const newCurrency = currencyPreference === 'som' ? 'usd' : 'som';
+    if (onCurrencyChange) {
+      onCurrencyChange(newCurrency);
+      logEvent('UI', 'GlobalCurrencyToggle', newCurrency);
+    }
+  };
   
   const handlePhoneClick = () => {
     // Отслеживаем клик по телефону как конверсию
@@ -34,6 +42,13 @@ const Header = ({ onNavigate, onAdminLogin }) => {
           </a>
         </nav>
         <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleCurrency}
+              className="flex items-center justify-center rounded-full w-10 h-10 bg-gray-100 hover:bg-gray-200 transition-colors"
+              title={currencyPreference === 'usd' ? "Показать в сомах" : "Показать в долларах"}
+            >
+              <DollarSign size={18} className={`${currencyPreference === 'usd' ? "text-green-600" : "text-gray-600"}`} />
+            </button>
             <Link to="/add" className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all text-base font-semibold flex items-center gap-2">
                 <Plus size={20} />
                 Добавить объект
