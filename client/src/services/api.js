@@ -21,3 +21,13 @@ export const getPropertyById = async (id) => {
         throw error;
     }
 };
+
+export const createProperty = async (propertyData) => {
+    try {
+        const response = await axios.post(`${API_URL}/properties`, propertyData);
+        return response.data;
+    } catch (error) {
+        console.error("Could not create property", error);
+        throw error;
+    }
+};

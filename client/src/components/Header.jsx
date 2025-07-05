@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Menu, X } from 'lucide-react';
+import { Home, Menu, X, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Header = ({ onNavigate, onAdminLogin }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,16 +10,20 @@ const Header = ({ onNavigate, onAdminLogin }) => {
   return (
     <header className="bg-white/90 backdrop-blur-sm sticky top-0 z-40 shadow-sm">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('hero')}>
+        <Link to="/" className="flex items-center gap-2 cursor-pointer">
           <Home className="text-primary" size={30} />
           <span className="text-2xl font-bold text-secondary">EstateFlow</span>
-        </div>
+        </Link>
         <nav className="hidden md:flex items-center gap-6">
           {links.map(link => (
             <button key={link} onClick={() => onNavigate(link.toLowerCase().replace(' ', '-'))} className="text-gray-600 hover:text-primary transition-colors text-lg">{link}</button>
           ))}
         </nav>
         <div className="flex items-center gap-4">
+            <Link to="/add" className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all text-base font-semibold flex items-center gap-2">
+                <Plus size={20} />
+                Добавить объект
+            </Link>
             <button onClick={onAdminLogin} className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all text-base font-semibold">
                 Войти
             </button>

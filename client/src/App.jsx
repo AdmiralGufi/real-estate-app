@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { getProperties } from './services/api';
 
@@ -10,6 +11,55 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import PropertyModal from './components/PropertyModal';
 import AdminPanel from './components/AdminPanel';
+import AddProperty from './components/AddProperty';
+
+const HomePage = ({ 
+  properties, 
+  filteredProperties, 
+  selectedProperty, 
+  setSelectedProperty, 
+  isAdmin, 
+  handleNavigate, 
+  handleAdminLogin, 
+  handleAdminLogout, 
+  handleAddProperty, 
+  handleEditProperty, 
+  handleDeleteProperty, 
+  fetchAndSetProperties 
+}) => (
+  <div className="min-h-screen bg-gray-50">
+    <Header onNavigate={handleNavigate} isAdmin={isAdmin} onAdminLogin={handleAdminLogin} onAdminLogout={handleAdminLogout} />
+    <main>
+      <HeroSection onNavigate={handleNavigate} />
+      <PropertyList 
+        properties={filteredProperties} 
+        onPropertyClick={setSelectedProperty} 
+        onFilterChange={fetchAndSetProperties} 
+      />
+      <AboutSection />
+      <ContactSection />
+    </main>
+    <Footer />
+    
+    <AnimatePresence>
+      {selectedProperty && (
+        <PropertyModal 
+          property={selectedProperty} 
+          onClose={() => setSelectedProperty(null)} 
+        />
+      )}
+    </AnimatePresence>
+    
+    {isAdmin && (
+      <AdminPanel 
+        properties={properties}
+        onAddProperty={handleAddProperty}
+        onEditProperty={handleEditProperty}
+        onDeleteProperty={handleDeleteProperty}
+      />
+    )}
+  </div>
+);
 
 export default function App() {
   const [properties, setProperties] = useState([]);
@@ -66,43 +116,26 @@ export default function App() {
   };
 
   return (
-    <div className="bg-light min-h-screen font-sans">
-      <Header onNavigate={handleNavigate} onAdminLogin={handleAdminLogin} />
-      
-      <main>
-        <HeroSection onNavigate={handleNavigate} />
-        <PropertyList 
-          properties={filteredProperties} 
-          onFilterChange={fetchAndSetProperties}
-          onCardClick={setSelectedProperty}
-          allDistricts={[...new Set(properties.map(p => p.location.district))]}
-        />
-        <AboutSection />
-        <ContactSection />
-      </main>
-
-      <Footer />
-
-      <AnimatePresence>
-        {selectedProperty && (
-          <PropertyModal 
-            property={selectedProperty} 
-            onClose={() => setSelectedProperty(null)} 
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isAdmin && (
-          <AdminPanel 
-            onLogout={handleAdminLogout}
+    <Router>
+      <Routes>
+        <Route path="/" element={
+          <HomePage 
             properties={properties}
-            onAdd={handleAddProperty}
-            onEdit={handleEditProperty}
-            onDelete={handleDeleteProperty}
+            filteredProperties={filteredProperties}
+            selectedProperty={selectedProperty}
+            setSelectedProperty={setSelectedProperty}
+            isAdmin={isAdmin}
+            handleNavigate={handleNavigate}
+            handleAdminLogin={handleAdminLogin}
+            handleAdminLogout={handleAdminLogout}
+            handleAddProperty={handleAddProperty}
+            handleEditProperty={handleEditProperty}
+            handleDeleteProperty={handleDeleteProperty}
+            fetchAndSetProperties={fetchAndSetProperties}
           />
-        )}
-      </AnimatePresence>
-    </div>
+        } />
+        <Route path="/add" element={<AddProperty />} />
+      </Routes>
+    </Router>
   );
 }

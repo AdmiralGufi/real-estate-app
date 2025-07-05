@@ -66,6 +66,27 @@ app.get('/api/properties/:id', async (req, res) => {
     }
 });
 
+// POST a new property
+app.post('/api/properties', async (req, res) => {
+    try {
+        const properties = await readData();
+        const newProperty = req.body;
+
+        // Generate a new ID
+        const newId = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+        newProperty.id = newId;
+
+        properties.push(newProperty);
+
+        // Write data back to the file
+        await fs.writeFile('./properties.json', JSON.stringify(properties, null, 2));
+
+        res.status(201).json(newProperty);
+    } catch (error) {
+        res.status(500).json({ message: "Ошибка сервера при создании объекта" });
+    }
+});
+
 // A fake auth route
 app.post('/api/login', (req, res) => {
     // In a real app, you'd check username/password
