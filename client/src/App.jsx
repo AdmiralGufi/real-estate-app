@@ -150,7 +150,6 @@ export default function App() {
     logEvent('UI', 'SortOrderChange', sortValue);
   };
   
-  // ...existing code...
   // This now only loads data from API once at the beginning
   const fetchProperties = useCallback(async () => {
     setIsLoading(true);
@@ -266,13 +265,29 @@ export default function App() {
     setFilteredProperties(filteredProperties.filter(p => p.id !== id));
   };
 
-  // Log property interactions
-  const handlePropertyInteraction = (propertyId, action) => {
-    logEvent('property_interaction', {
-      property_id: propertyId,
-      action: action,
-      timestamp: new Date().toISOString()
-    });
+  // Отслеживание взаимодействий с объектами с карты
+  useEffect(() => {
+    const handlePropertySelectedFromMap = (event) => {
+      const property = event.detail;
+      if (property) {
+        logEvent('Map', 'ViewPropertyDetails', `ID: ${property.id}`, property.price);
+        setSelectedProperty(property);
+      }
+    };
+    
+    document.addEventListener('property-selected', handlePropertySelectedFromMap);
+    
+    return () => {
+      document.removeEventListener('property-selected', handlePropertySelectedFromMap);
+    };
+  }, []);
+  
+  // Отслеживание выбора объекта недвижимости
+  const trackPropertySelection = (property) => {
+    if (property) {
+      logEvent('Property', 'View', `ID: ${property.id}`, property.price);
+    }
+    setSelectedProperty(property);
   };
 
   return (
@@ -288,10 +303,11 @@ export default function App() {
         handleAdminLogout={handleAdminLogout}
         handleAddProperty={handleAddProperty}
         handleEditProperty={handleEditProperty}
-        handleDeleteProperty={handleDeleteProperty}          handleFilterChange={handleFilterChange}
-          handleCurrencyChange={handleCurrencyChange}
-          handleSortChange={handleSortChange}
-          currencyPreference={currencyPreference}
+        handleDeleteProperty={handleDeleteProperty}
+        handleFilterChange={handleFilterChange}
+        handleCurrencyChange={handleCurrencyChange}
+        handleSortChange={handleSortChange}
+        currencyPreference={currencyPreference}
         isLoading={isLoading}
         error={error}
         allDistricts={allDistricts}
