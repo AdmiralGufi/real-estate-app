@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { getProperties } from './services/api';
 
@@ -116,26 +116,24 @@ export default function App() {
   };
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <HomePage 
-            properties={properties}
-            filteredProperties={filteredProperties}
-            selectedProperty={selectedProperty}
-            setSelectedProperty={setSelectedProperty}
-            isAdmin={isAdmin}
-            handleNavigate={handleNavigate}
-            handleAdminLogin={handleAdminLogin}
-            handleAdminLogout={handleAdminLogout}
-            handleAddProperty={handleAddProperty}
-            handleEditProperty={handleEditProperty}
-            handleDeleteProperty={handleDeleteProperty}
-            fetchAndSetProperties={fetchAndSetProperties}
-          />
-        } />
-        <Route path="/add" element={<AddProperty />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={
+        <HomePage 
+          properties={properties}
+          filteredProperties={filteredProperties}
+          selectedProperty={selectedProperty}
+          setSelectedProperty={setSelectedProperty}
+          isAdmin={isAdmin}
+          handleNavigate={handleNavigate}
+          handleAdminLogin={handleAdminLogin}
+          handleAdminLogout={handleAdminLogout}
+          handleAddProperty={handleAddProperty}
+          handleEditProperty={handleEditProperty}
+          handleDeleteProperty={handleDeleteProperty}
+          fetchAndSetProperties={fetchAndSetProperties}
+        />
+      } />
+      <Route path="/add" element={<AddProperty />} />
+    </Routes>
   );
 }
