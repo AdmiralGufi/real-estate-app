@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://real-estate-app-dqrc.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://real-estate-app-dqrc.onrender.com/api';
 
 export const getProperties = async (filters) => {
     try {
