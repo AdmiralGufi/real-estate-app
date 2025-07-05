@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { getProperties } from './services/api';
 import { logPageView, logEvent, logConversion } from './services/analytics';
-import { updateExchangeRate } from './services/currencyConverter';
+import { updateExchangeRate, somToUsd, usdToSom } from './services/currencyConverter';
 
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
@@ -14,7 +14,7 @@ import Footer from './components/Footer';
 import PropertyModal from './components/PropertyModal';
 import AdminPanel from './components/AdminPanel';
 import AddProperty from './components/AddProperty';
-import PropertyMap from './components/PropertyMap';
+import YandexMap from './components/YandexMap';
 
 const HomePage = ({ 
   properties, 
@@ -55,11 +55,13 @@ const HomePage = ({
           properties={filteredProperties || []} 
           onPropertyClick={setSelectedProperty} 
           onFiltersChange={handleFilterChange}
+          onSortChange={handleSortChange}
+          currencyPreference={currencyPreference}
           allDistricts={allDistricts || []}
         />
       )}
       <div className="container mx-auto px-4 py-8">
-        <PropertyMap properties={filteredProperties || []} />
+        <YandexMap properties={filteredProperties || []} />
       </div>
       <AboutSection />
       <ContactSection />
@@ -95,6 +97,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [allDistricts, setAllDistricts] = useState([]);
   const [currencyPreference, setCurrencyPreference] = useState('som'); // 'som' или 'usd'
+  const [sortOrder, setSortOrder] = useState('new'); // Добавляем состояние для сортировки
   const [filters, setFilters] = useState({
     type: 'all',
     district: 'all',
@@ -117,19 +120,37 @@ export default function App() {
   }, []);
   
   // Функция для переключения валюты
-  const handleCurrencyChange = (currency) => {
-    setCurrencyPreference(currency);
-    logEvent('UI', 'DefaultCurrencyChange', currency);
+  const handleCurrencyChange = (newCurrency) => {
+    setCurrencyPreference(newCurrency);
+    logEvent('UI', 'CurrencyPreferenceChange', newCurrency);
   };
   
-  // Отслеживание взаимодействий с объектами
-  const trackPropertySelection = (property) => {
-    if (property) {
-      logEvent('Property', 'View', `ID: ${property.id}`, property.price);
-    }
-    setSelectedProperty(property);
+  const handleSortChange = (sortValue) => {
+    setSortOrder(sortValue);
+    
+    // Применяем сортировку к текущим отфильтрованным объектам
+    const sorted = [...filteredProperties].sort((a, b) => {
+      switch(sortValue) {
+        case 'price_asc':
+          return a.price - b.price;
+        case 'price_desc':
+          return b.price - a.price;
+        case 'area_asc':
+          return a.area - b.area;
+        case 'area_desc':
+          return b.area - a.area;
+        case 'new':
+        default:
+          // По умолчанию сортируем по ID (предполагая, что новые объекты имеют большие ID)
+          return b.id - a.id;
+      }
+    });
+    
+    setFilteredProperties(sorted);
+    logEvent('UI', 'SortOrderChange', sortValue);
   };
-
+  
+  // ...existing code...
   // This now only loads data from API once at the beginning
   const fetchProperties = useCallback(async () => {
     setIsLoading(true);
@@ -194,12 +215,20 @@ export default function App() {
       result = result.filter(p => p.location?.district === filters.district);
     }
     
-    // Price range filter
+    // Price range filter with currency conversion
     if (filters.minPrice) {
-      result = result.filter(p => p.price >= Number(filters.minPrice));
+      const minPriceInSom = currencyPreference === 'usd' 
+        ? usdToSom(Number(filters.minPrice)) 
+        : Number(filters.minPrice);
+        
+      result = result.filter(p => p.price >= minPriceInSom);
     }
     if (filters.maxPrice) {
-      result = result.filter(p => p.price <= Number(filters.maxPrice));
+      const maxPriceInSom = currencyPreference === 'usd' 
+        ? usdToSom(Number(filters.maxPrice)) 
+        : Number(filters.maxPrice);
+        
+      result = result.filter(p => p.price <= maxPriceInSom);
     }
     
     // Update filtered properties
@@ -259,10 +288,10 @@ export default function App() {
         handleAdminLogout={handleAdminLogout}
         handleAddProperty={handleAddProperty}
         handleEditProperty={handleEditProperty}
-        handleDeleteProperty={handleDeleteProperty}
-        handleFilterChange={handleFilterChange}
-        handleCurrencyChange={handleCurrencyChange}
-        currencyPreference={currencyPreference}
+        handleDeleteProperty={handleDeleteProperty}          handleFilterChange={handleFilterChange}
+          handleCurrencyChange={handleCurrencyChange}
+          handleSortChange={handleSortChange}
+          currencyPreference={currencyPreference}
         isLoading={isLoading}
         error={error}
         allDistricts={allDistricts}
