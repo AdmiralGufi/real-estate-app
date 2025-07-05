@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { getProperties } from './services/api';
+import { logPageView, logEvent, logConversion } from './services/analytics';
 
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
@@ -86,6 +87,21 @@ export default function App() {
     maxPrice: ''
   });
   
+  const location = useLocation();
+  
+  // Отслеживание изменения страницы
+  useEffect(() => {
+    logPageView(location.pathname + location.search);
+  }, [location]);
+  
+  // Отслеживание взаимодействий с объектами
+  const trackPropertySelection = (property) => {
+    if (property) {
+      logEvent('Property', 'View', `ID: ${property.id}`, property.price);
+    }
+    setSelectedProperty(property);
+  };
+
   // This now only loads data from API once at the beginning
   const fetchProperties = useCallback(async () => {
     setIsLoading(true);
@@ -126,6 +142,11 @@ export default function App() {
   useEffect(() => {
     fetchProperties();
   }, [fetchProperties]);
+
+  // Log page views
+  useEffect(() => {
+    logPageView(location.pathname);
+  }, [location.pathname]);
 
   // New function to handle filter changes
   const handleFilterChange = (name, value) => {
@@ -188,13 +209,22 @@ export default function App() {
     setFilteredProperties(filteredProperties.filter(p => p.id !== id));
   };
 
+  // Log property interactions
+  const handlePropertyInteraction = (propertyId, action) => {
+    logEvent('property_interaction', {
+      property_id: propertyId,
+      action: action,
+      timestamp: new Date().toISOString()
+    });
+  };
+
   return (
     <Routes>
       <Route path="/" element={<HomePage
         properties={properties}
         filteredProperties={filteredProperties}
         selectedProperty={selectedProperty}
-        setSelectedProperty={setSelectedProperty}
+        setSelectedProperty={trackPropertySelection}
         isAdmin={isAdmin}
         handleNavigate={handleNavigate}
         handleAdminLogin={handleAdminLogin}
