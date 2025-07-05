@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PropertyCard from './PropertyCard';
 
-const PropertyList = ({ properties, onFilterChange, onCardClick, allDistricts }) => {
-  const [filters, setFilters] = useState({ type: 'all', district: 'all', minPrice: '', maxPrice: '' });
+// The component now receives onFiltersChange to pass filter state up
+// and no longer receives onFilterChange which triggered fetches.
+const PropertyList = ({ properties = [], onFiltersChange, onPropertyClick, allDistricts = [] }) => {
 
   const handleFilterChange = (e) => {
-    const newFilters = { ...filters, [e.target.name]: e.target.value };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
+    const { name, value } = e.target;
+    // Pass the change up to the parent component (App.jsx)
+    onFiltersChange(name, value);
   };
 
   return (
@@ -28,7 +29,7 @@ const PropertyList = ({ properties, onFilterChange, onCardClick, allDistricts })
           </select>
           <select name="district" onChange={handleFilterChange} className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary">
             <option value="all">Все районы</option>
-            {allDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+            {Array.isArray(allDistricts) && allDistricts.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
           <input type="number" name="minPrice" placeholder="Цена от, ₽" onChange={handleFilterChange} className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary" />
           <input type="number" name="maxPrice" placeholder="Цена до, ₽" onChange={handleFilterChange} className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary" />
@@ -36,13 +37,19 @@ const PropertyList = ({ properties, onFilterChange, onCardClick, allDistricts })
 
         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence>
-            {properties.map((property) => (
-              <PropertyCard 
-                key={property.id} 
-                property={property} 
-                onCardClick={onCardClick}
-              />
-            ))}
+            {Array.isArray(properties) && properties.length > 0 ? (
+              properties.map((property) => (
+                <PropertyCard 
+                  key={property.id} 
+                  property={property} 
+                  onCardClick={onPropertyClick}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center text-gray-500 py-10">
+                <p>Объекты не найдены. Попробуйте изменить фильтры.</p>
+              </div>
+            )}
           </AnimatePresence>
         </motion.div>
       </div>

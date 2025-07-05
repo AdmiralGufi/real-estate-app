@@ -25,9 +25,10 @@ const HomePage = ({
   handleAddProperty, 
   handleEditProperty, 
   handleDeleteProperty, 
-  fetchAndSetProperties, 
-  isLoading, // Pass isLoading
-  error // Pass error
+  handleFilterChange, 
+  isLoading,
+  error,
+  allDistricts
 }) => (
   <div className="min-h-screen bg-gray-50">
     <Header onNavigate={handleNavigate} isAdmin={isAdmin} onAdminLogin={handleAdminLogin} onAdminLogout={handleAdminLogout} />
@@ -39,9 +40,10 @@ const HomePage = ({
         <div className="text-center py-10 text-red-500">{error}</div>
       ) : (
         <PropertyList 
-          properties={filteredProperties} 
+          properties={filteredProperties || []} 
           onPropertyClick={setSelectedProperty} 
-          onFilterChange={fetchAndSetProperties} 
+          onFiltersChange={handleFilterChange}
+          allDistricts={allDistricts || []}
         />
       )}
       <AboutSection />
@@ -60,7 +62,7 @@ const HomePage = ({
     
     {isAdmin && (
       <AdminPanel 
-        properties={properties}
+        properties={properties || []}
         onAddProperty={handleAddProperty}
         onEditProperty={handleEditProperty}
         onDeleteProperty={handleDeleteProperty}
@@ -76,34 +78,84 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allDistricts, setAllDistricts] = useState([]);
+  const [filters, setFilters] = useState({
+    type: 'all',
+    district: 'all',
+    minPrice: '',
+    maxPrice: ''
+  });
   
-  const fetchAndSetProperties = useCallback(async (filters = {}) => {
+  // This now only loads data from API once at the beginning
+  const fetchProperties = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getProperties(filters);
+      const data = await getProperties();
       if (Array.isArray(data)) {
+        setProperties(data);
         setFilteredProperties(data);
-        if (Object.keys(filters).length === 0) {
-          setProperties(data);
-        }
+        
+        // Safely extract unique districts
+        const districts = [];
+        data.forEach(property => {
+          if (property && property.location && property.location.district) {
+            if (!districts.includes(property.location.district)) {
+              districts.push(property.location.district);
+            }
+          }
+        });
+        setAllDistricts(districts);
       } else {
         console.error("API did not return an array:", data);
         setError("Не удалось получить данные в ожидаемом формате.");
-        setFilteredProperties([]); // Reset to empty array on error
+        setProperties([]);
+        setFilteredProperties([]);
       }
     } catch (error) {
       console.error("Ошибка при загрузке объектов:", error);
       setError(`Ошибка сети: ${error.message}`);
-      setFilteredProperties([]); // Reset to empty array on error
+      setProperties([]);
+      setFilteredProperties([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // Fetch properties only once when the component mounts
   useEffect(() => {
-    fetchAndSetProperties();
-  }, [fetchAndSetProperties]);
+    fetchProperties();
+  }, [fetchProperties]);
+
+  // New function to handle filter changes
+  const handleFilterChange = (name, value) => {
+    // Update filters state
+    setFilters(prev => ({ ...prev, [name]: value }));
+    
+    // Apply filters to the properties
+    let result = [...properties];
+    
+    // Type filter
+    if (filters.type && filters.type !== 'all') {
+      result = result.filter(p => p.type === filters.type);
+    }
+    
+    // District filter
+    if (filters.district && filters.district !== 'all') {
+      result = result.filter(p => p.location?.district === filters.district);
+    }
+    
+    // Price range filter
+    if (filters.minPrice) {
+      result = result.filter(p => p.price >= Number(filters.minPrice));
+    }
+    if (filters.maxPrice) {
+      result = result.filter(p => p.price <= Number(filters.maxPrice));
+    }
+    
+    // Update filtered properties
+    setFilteredProperties(result);
+  };
 
   const handleNavigate = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -150,9 +202,10 @@ export default function App() {
         handleAddProperty={handleAddProperty}
         handleEditProperty={handleEditProperty}
         handleDeleteProperty={handleDeleteProperty}
-        fetchAndSetProperties={fetchAndSetProperties}
+        handleFilterChange={handleFilterChange}
         isLoading={isLoading}
         error={error}
+        allDistricts={allDistricts}
       />} />
       <Route path="/add" element={<AddProperty onAddProperty={handleAddProperty} />} />
     </Routes>
