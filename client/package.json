@@ -27,6 +27,5 @@
     "tailwindcss": "^3.3.5",
     "vite": "^4.4.5"
   },
-  "homepage": "https://AdmiralGufi.github.io/real-estate-app",
-  "API_URL": "https://real-estate-app-dqrc.onrender.com/api"
+  "homepage": "https://AdmiralGufi.github.io/real-estate-app"
 }

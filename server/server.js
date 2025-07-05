@@ -6,7 +6,14 @@ const app = express();
 const PORT = 5001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://admiralgufi.github.io',
+        'https://real-estate-app-static.onrender.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 app.use(express.json());
 
 // Helper function to read data
