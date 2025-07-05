@@ -9,7 +9,9 @@ const PORT = 5001;
 app.use(cors({
     origin: [
         'https://admiralgufi.github.io',
-        'https://real-estate-app-static.onrender.com'
+        'https://real-estate-app-static.onrender.com',
+        'https://admiralgufi.github.io/real-estate-app',
+        'https://admiralgufi.github.io/real-estate-app/'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
