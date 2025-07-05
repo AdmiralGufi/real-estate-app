@@ -25,17 +25,25 @@ const HomePage = ({
   handleAddProperty, 
   handleEditProperty, 
   handleDeleteProperty, 
-  fetchAndSetProperties 
+  fetchAndSetProperties, 
+  isLoading, // Pass isLoading
+  error // Pass error
 }) => (
   <div className="min-h-screen bg-gray-50">
     <Header onNavigate={handleNavigate} isAdmin={isAdmin} onAdminLogin={handleAdminLogin} onAdminLogout={handleAdminLogout} />
     <main>
       <HeroSection onNavigate={handleNavigate} />
-      <PropertyList 
-        properties={filteredProperties} 
-        onPropertyClick={setSelectedProperty} 
-        onFilterChange={fetchAndSetProperties} 
-      />
+      {isLoading ? (
+        <div className="text-center py-10">Загрузка объектов...</div>
+      ) : error ? (
+        <div className="text-center py-10 text-red-500">{error}</div>
+      ) : (
+        <PropertyList 
+          properties={filteredProperties} 
+          onPropertyClick={setSelectedProperty} 
+          onFilterChange={fetchAndSetProperties} 
+        />
+      )}
       <AboutSection />
       <ContactSection />
     </main>
@@ -66,16 +74,30 @@ export default function App() {
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const fetchAndSetProperties = useCallback(async (filters = {}) => {
+    setIsLoading(true);
+    setError(null);
     try {
       const data = await getProperties(filters);
-      setFilteredProperties(data);
-      if (Object.keys(filters).length === 0) {
-        setProperties(data);
+      if (Array.isArray(data)) {
+        setFilteredProperties(data);
+        if (Object.keys(filters).length === 0) {
+          setProperties(data);
+        }
+      } else {
+        console.error("API did not return an array:", data);
+        setError("Не удалось получить данные в ожидаемом формате.");
+        setFilteredProperties([]); // Reset to empty array on error
       }
     } catch (error) {
       console.error("Ошибка при загрузке объектов:", error);
+      setError(`Ошибка сети: ${error.message}`);
+      setFilteredProperties([]); // Reset to empty array on error
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -110,30 +132,29 @@ export default function App() {
   };
 
   const handleDeleteProperty = (id) => {
-    const updater = (prev) => prev.filter(p => p.id !== id);
-    setProperties(updater);
-    setFilteredProperties(updater);
+    setProperties(properties.filter(p => p.id !== id));
+    setFilteredProperties(filteredProperties.filter(p => p.id !== id));
   };
 
   return (
     <Routes>
-      <Route path="/" element={
-        <HomePage 
-          properties={properties}
-          filteredProperties={filteredProperties}
-          selectedProperty={selectedProperty}
-          setSelectedProperty={setSelectedProperty}
-          isAdmin={isAdmin}
-          handleNavigate={handleNavigate}
-          handleAdminLogin={handleAdminLogin}
-          handleAdminLogout={handleAdminLogout}
-          handleAddProperty={handleAddProperty}
-          handleEditProperty={handleEditProperty}
-          handleDeleteProperty={handleDeleteProperty}
-          fetchAndSetProperties={fetchAndSetProperties}
-        />
-      } />
-      <Route path="/add" element={<AddProperty />} />
+      <Route path="/" element={<HomePage
+        properties={properties}
+        filteredProperties={filteredProperties}
+        selectedProperty={selectedProperty}
+        setSelectedProperty={setSelectedProperty}
+        isAdmin={isAdmin}
+        handleNavigate={handleNavigate}
+        handleAdminLogin={handleAdminLogin}
+        handleAdminLogout={handleAdminLogout}
+        handleAddProperty={handleAddProperty}
+        handleEditProperty={handleEditProperty}
+        handleDeleteProperty={handleDeleteProperty}
+        fetchAndSetProperties={fetchAndSetProperties}
+        isLoading={isLoading}
+        error={error}
+      />} />
+      <Route path="/add" element={<AddProperty onAddProperty={handleAddProperty} />} />
     </Routes>
   );
 }
