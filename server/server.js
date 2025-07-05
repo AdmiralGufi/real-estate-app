@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs/promises';
+import path from 'path';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -21,6 +22,28 @@ app.use(cors({
 }));
 app.use(express.json());
 
+const propertiesFilePath = path.join(__dirname, 'properties.json');
+
+const readProperties = () => {
+    try {
+        if (fs.existsSync(propertiesFilePath)) {
+            const data = fs.readFileSync(propertiesFilePath, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error reading or parsing properties.json:', error);
+    }
+    return []; // Возвращаем пустой массив в случае ошибки или отсутствия файла
+};
+
+const writeProperties = (data) => {
+    try {
+        fs.writeFileSync(propertiesFilePath, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error writing to properties.json:', error);
+    }
+};
+
 // Root route for health check
 app.get('/', (req, res) => {
     res.json({ 
@@ -35,43 +58,22 @@ app.get('/', (req, res) => {
     });
 });
 
-// Helper function to read data
-const readData = async () => {
-    const data = await fs.readFile('./properties.json', 'utf-8');
-    return JSON.parse(data);
-};
-
 // --- API Routes ---
 
 // GET all properties with filtering
-app.get('/api/properties', async (req, res) => {
+app.get('/api/properties', (req, res) => {
     try {
-        let properties = await readData();
-        const { type, minPrice, maxPrice, district } = req.query;
-
-        if (type && type !== 'all') {
-            properties = properties.filter(p => p.type === type);
-        }
-        if (district && district !== 'all') {
-            properties = properties.filter(p => p.location.district === district);
-        }
-        if (minPrice) {
-            properties = properties.filter(p => p.price >= parseInt(minPrice));
-        }
-        if (maxPrice) {
-            properties = properties.filter(p => p.price <= parseInt(maxPrice));
-        }
-
-        res.status(200).json(properties);
+        const properties = readProperties();
+        res.json(properties);
     } catch (error) {
-        res.status(500).json({ message: "Ошибка сервера" });
+        res.status(500).json({ message: "Error reading properties data" });
     }
 });
 
 // GET a single property by ID
-app.get('/api/properties/:id', async (req, res) => {
+app.get('/api/properties/:id', (req, res) => {
     try {
-        const properties = await readData();
+        const properties = readProperties();
         const property = properties.find(p => p.id === parseInt(req.params.id));
         if (property) {
             res.status(200).json(property);
@@ -86,7 +88,7 @@ app.get('/api/properties/:id', async (req, res) => {
 // POST a new property
 app.post('/api/properties', async (req, res) => {
     try {
-        const properties = await readData();
+        const properties = readProperties();
         const newProperty = req.body;
 
         // Generate a new ID
@@ -96,7 +98,7 @@ app.post('/api/properties', async (req, res) => {
         properties.push(newProperty);
 
         // Write data back to the file
-        await fs.writeFile('./properties.json', JSON.stringify(properties, null, 2));
+        writeProperties(properties);
 
         res.status(201).json(newProperty);
     } catch (error) {
@@ -107,7 +109,7 @@ app.post('/api/properties', async (req, res) => {
 // PUT update a property
 app.put('/api/properties/:id', async (req, res) => {
     try {
-        const properties = await readData();
+        const properties = readProperties();
         const propertyId = parseInt(req.params.id);
         const updatedProperty = req.body;
         
@@ -118,7 +120,7 @@ app.put('/api/properties/:id', async (req, res) => {
         
         properties[propertyIndex] = { ...properties[propertyIndex], ...updatedProperty, id: propertyId };
         
-        await fs.writeFile('./properties.json', JSON.stringify(properties, null, 2));
+        writeProperties(properties);
         
         res.status(200).json(properties[propertyIndex]);
     } catch (error) {
@@ -129,7 +131,7 @@ app.put('/api/properties/:id', async (req, res) => {
 // DELETE a property
 app.delete('/api/properties/:id', async (req, res) => {
     try {
-        const properties = await readData();
+        const properties = readProperties();
         const propertyId = parseInt(req.params.id);
         
         const propertyIndex = properties.findIndex(p => p.id === propertyId);
@@ -139,7 +141,7 @@ app.delete('/api/properties/:id', async (req, res) => {
         
         const deletedProperty = properties.splice(propertyIndex, 1)[0];
         
-        await fs.writeFile('./properties.json', JSON.stringify(properties, null, 2));
+        writeProperties(properties);
         
         res.status(200).json({ message: 'Объект удален', property: deletedProperty });
     } catch (error) {
