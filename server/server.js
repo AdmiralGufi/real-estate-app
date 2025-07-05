@@ -87,6 +87,49 @@ app.post('/api/properties', async (req, res) => {
     }
 });
 
+// PUT update a property
+app.put('/api/properties/:id', async (req, res) => {
+    try {
+        const properties = await readData();
+        const propertyId = parseInt(req.params.id);
+        const updatedProperty = req.body;
+        
+        const propertyIndex = properties.findIndex(p => p.id === propertyId);
+        if (propertyIndex === -1) {
+            return res.status(404).json({ message: 'Объект не найден' });
+        }
+        
+        properties[propertyIndex] = { ...properties[propertyIndex], ...updatedProperty, id: propertyId };
+        
+        await fs.writeFile('./properties.json', JSON.stringify(properties, null, 2));
+        
+        res.status(200).json(properties[propertyIndex]);
+    } catch (error) {
+        res.status(500).json({ message: "Ошибка сервера при обновлении объекта" });
+    }
+});
+
+// DELETE a property
+app.delete('/api/properties/:id', async (req, res) => {
+    try {
+        const properties = await readData();
+        const propertyId = parseInt(req.params.id);
+        
+        const propertyIndex = properties.findIndex(p => p.id === propertyId);
+        if (propertyIndex === -1) {
+            return res.status(404).json({ message: 'Объект не найден' });
+        }
+        
+        const deletedProperty = properties.splice(propertyIndex, 1)[0];
+        
+        await fs.writeFile('./properties.json', JSON.stringify(properties, null, 2));
+        
+        res.status(200).json({ message: 'Объект удален', property: deletedProperty });
+    } catch (error) {
+        res.status(500).json({ message: "Ошибка сервера при удалении объекта" });
+    }
+});
+
 // A fake auth route
 app.post('/api/login', (req, res) => {
     // In a real app, you'd check username/password

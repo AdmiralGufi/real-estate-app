@@ -31,3 +31,23 @@ export const createProperty = async (propertyData) => {
         throw error;
     }
 };
+
+export const updateProperty = async (id, propertyData) => {
+    try {
+        const response = await axios.put(`${API_URL}/properties/${id}`, propertyData);
+        return response.data;
+    } catch (error) {
+        console.error(`Could not update property with id ${id}`, error);
+        throw error;
+    }
+};
+
+export const deleteProperty = async (id) => {
+    try {
+        const response = await axios.delete(`${API_URL}/properties/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Could not delete property with id ${id}`, error);
+        throw error;
+    }
+};
