@@ -1,10 +1,14 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
@@ -28,12 +32,17 @@ const readProperties = () => {
     try {
         if (fs.existsSync(propertiesFilePath)) {
             const data = fs.readFileSync(propertiesFilePath, 'utf8');
+            // Если файл пустой, вернем пустой массив
+            if (data.trim() === '') {
+                return [];
+            }
             return JSON.parse(data);
         }
     } catch (error) {
         console.error('Error reading or parsing properties.json:', error);
     }
-    return []; // Возвращаем пустой массив в случае ошибки или отсутствия файла
+    // Если файла нет или произошла ошибка, возвращаем пустой массив
+    return []; 
 };
 
 const writeProperties = (data) => {
@@ -86,7 +95,7 @@ app.get('/api/properties/:id', (req, res) => {
 });
 
 // POST a new property
-app.post('/api/properties', async (req, res) => {
+app.post('/api/properties', (req, res) => {
     try {
         const properties = readProperties();
         const newProperty = req.body;
@@ -107,7 +116,7 @@ app.post('/api/properties', async (req, res) => {
 });
 
 // PUT update a property
-app.put('/api/properties/:id', async (req, res) => {
+app.put('/api/properties/:id', (req, res) => {
     try {
         const properties = readProperties();
         const propertyId = parseInt(req.params.id);
@@ -129,7 +138,7 @@ app.put('/api/properties/:id', async (req, res) => {
 });
 
 // DELETE a property
-app.delete('/api/properties/:id', async (req, res) => {
+app.delete('/api/properties/:id', (req, res) => {
     try {
         const properties = readProperties();
         const propertyId = parseInt(req.params.id);
