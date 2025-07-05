@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: real-estate-frontend
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: VITE_API_URL
+        value: https://real-estate-app-dqrc.onrender.com/api
