@@ -13,7 +13,8 @@ app.use(cors({
         'https://admiralgufi.github.io/real-estate-app',
         'https://admiralgufi.github.io/real-estate-app/',
         'https://real-estate-app-frontend.onrender.com',
-        'https://real-estate-app-frontend-xyz.onrender.com'
+        'https://real-estate-app-frontend-xyz.onrender.com',
+        'https://real-estate-app-front-1hpo.onrender.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
